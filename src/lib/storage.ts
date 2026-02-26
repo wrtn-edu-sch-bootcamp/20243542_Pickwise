@@ -8,7 +8,7 @@ const KEYS = {
   PENDING: 'decide_pending',
 } as const;
 
-const HISTORY_DAYS = 7;
+const HISTORY_DAYS = 15;
 
 // ── 레거시 단일 프로필 → 다중 프로필로 마이그레이션 ──
 function migrateIfNeeded(): void {
