@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { loadPendingDecision, clearPendingDecision, saveToHistory, updateHistoryEntry } from '@/lib/storage';
 import type { DecisionRequest, HistoryEntry } from '@/lib/types';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useUser } from '@/contexts/UserContext';
 
 type Status = 'loading' | 'streaming' | 'done' | 'error';
 
@@ -33,7 +34,10 @@ function parseUnanalyzable(text: string): boolean {
 
 function parseReport(text: string): string {
   const lines = text.split('\n');
-  const startIdx = lines.findIndex((l) => l.startsWith('###'));
+  // ### 헤딩 또는 이모지 섹션 제목 모두 인식
+  const startIdx = lines.findIndex((l) =>
+    l.startsWith('###') || /^[🎯⚡💰⭐✅⚠️📊💡]/u.test(l)
+  );
   if (startIdx === -1) return '';
   return lines.slice(startIdx).join('\n');
 }
@@ -42,6 +46,7 @@ export default function ResultPage() {
   const router = useRouter();
   const { theme } = useTheme();
   const isLight = theme === 'light';
+  const { activeProfileId } = useUser();
   const [data, setData] = useState<DecisionRequest | null>(null);
   const [status, setStatus] = useState<Status>('loading');
   const [streamedText, setStreamedText] = useState('');
@@ -129,6 +134,7 @@ export default function ResultPage() {
         userProfile: data.userProfile,
         result: streamedText,
         chosenItem: chosen ?? undefined,
+        profileId: activeProfileId ?? undefined,
       };
       saveToHistory(entry);
     }
@@ -478,31 +484,36 @@ export default function ResultPage() {
   );
 }
 
+// 섹션 제목 판별: ### 헤딩 또는 이모지로 시작하는 짧은 줄 (bullet 아님)
+const SECTION_TITLE_RE = /^(#{1,3}\s|[🎯⚡💰⭐✅⚠️📊💡])/u;
+
 function ReportMarkdown({ text }: { text: string }) {
   const lines = text.split('\n');
   return (
     <div>
       {lines.map((line, i) => {
-        if (/^#{1,3}\s/.test(line)) {
+        // 섹션 제목
+        if (SECTION_TITLE_RE.test(line) && !line.startsWith('- ') && line.trim().length < 30) {
           return (
-            <h3 key={i} style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-heading)', marginTop: i === 0 ? 0 : 18, marginBottom: 8 }}>
+            <h3 key={i} style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-heading)', marginTop: i === 0 ? 0 : 18, marginBottom: 6 }}>
               {line.replace(/^#{1,3}\s+/, '')}
             </h3>
           );
         }
+        // bullet
         if (line.startsWith('- ') || line.startsWith('• ')) {
           return (
             <ul key={i} style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-              <li style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
+              <li style={{ display: 'flex', gap: 8, marginBottom: 5, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                 <span style={{ color: '#7C3AED', flexShrink: 0, marginTop: 2 }}>▸</span>
                 <span>{renderInline(line.replace(/^[-•]\s+/, ''))}</span>
               </li>
             </ul>
           );
         }
-        if (line.trim() === '') return <div key={i} style={{ height: 6 }} />;
+        if (line.trim() === '') return <div key={i} style={{ height: 8 }} />;
         return (
-          <p key={i} style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7, margin: '0 0 6px' }}>
+          <p key={i} style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65, margin: '0 0 5px' }}>
             {renderInline(line)}
           </p>
         );

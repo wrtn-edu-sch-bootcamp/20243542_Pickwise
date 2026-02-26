@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser } from '@/contexts/UserContext';
+import { MAX_PROFILES } from '@/lib/types';
 import type { UserProfile } from '@/lib/types';
 
 const genderOptions = [
@@ -25,8 +26,10 @@ function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get('edit') === 'true';
+  const isNewMode = searchParams.get('new') === 'true'; // 새 사용자 추가
+  const editProfileId = searchParams.get('profileId'); // 특정 프로필 수정 시
 
-  const { profile, setProfile } = useUser();
+  const { profile, profiles, setProfile, addNewProfile, editProfile } = useUser();
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
@@ -37,26 +40,45 @@ function OnboardingContent() {
 
   // 수정 모드일 때 기존 값으로 초기화
   useEffect(() => {
-    if (isEditMode && profile) {
-      setName(profile.name);
-      setGender(profile.gender);
-      setAge(String(profile.age));
-      setMbti(profile.mbti ?? '');
+    if (isEditMode) {
+      // profileId가 있으면 해당 프로필, 없으면 현재 활성 프로필
+      const targetProfile = editProfileId
+        ? profiles.find((p) => p.id === editProfileId)?.profile
+        : profile;
+      if (targetProfile) {
+        setName(targetProfile.name);
+        setGender(targetProfile.gender);
+        setAge(String(targetProfile.age));
+        setMbti(targetProfile.mbti ?? '');
+      }
     }
-  }, [isEditMode, profile]);
+  // profiles가 로드된 이후에만 실행되도록 profiles를 의존성에 포함
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, editProfileId, profiles.length]);
 
   const goNext = () => { setDirection(1); setStep((s) => s + 1); };
   const goPrev = () => { setDirection(-1); setStep((s) => s - 1); };
 
   const handleFinish = () => {
     if (!name || !gender || !age) return;
-    setProfile({
+    const newProfile: UserProfile = {
       name: name.trim(),
       gender: gender as UserProfile['gender'],
       age: Number(age),
       mbti: mbti || '모름',
-    });
-    router.push(isEditMode ? '/' : '/decide');
+    };
+    if (isNewMode) {
+      // 새 사용자 추가 (addNewProfile이 자동으로 active로 설정)
+      addNewProfile(newProfile);
+      router.push('/profiles');
+    } else if (isEditMode && editProfileId) {
+      // 특정 프로필 ID 수정
+      editProfile(editProfileId, newProfile);
+      router.push('/profiles');
+    } else {
+      setProfile(newProfile);
+      router.push(isEditMode ? '/' : '/decide');
+    }
   };
 
   const slideVariants = {
@@ -77,14 +99,24 @@ function OnboardingContent() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          {step > 0 ? '이전' : isEditMode ? '취소' : '뒤로'}
+          {step > 0 ? '이전' : (isEditMode || isNewMode) ? '취소' : '뒤로'}
         </button>
 
-        {/* 수정 모드 배지 */}
-        {isEditMode && (
+        {/* 모드 배지 */}
+        {isNewMode && (
+          <div className="badge" style={{ marginBottom: 20 }}>
+            <span>👤</span>
+            <span>새 사용자 추가 ({profiles.length + 1}/{MAX_PROFILES})</span>
+          </div>
+        )}
+        {isEditMode && !isNewMode && (
           <div className="badge" style={{ marginBottom: 20 }}>
             <span>✏️</span>
-            <span>프로필 수정 중</span>
+            <span>
+              {editProfileId
+                ? `${profiles.find((p) => p.id === editProfileId)?.profile.name ?? ''}님 프로필 수정`
+                : '프로필 수정 중'}
+            </span>
           </div>
         )}
 

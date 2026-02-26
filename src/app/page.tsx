@@ -45,7 +45,7 @@ const MOJI_INTRO_MESSAGES = [
 
 export default function LandingPage() {
   const router = useRouter();
-  const { profile, isLoaded } = useUser();
+  const { profile, profiles, isLoaded } = useUser();
 
   useEffect(() => {
     if (isLoaded && profile) {
@@ -56,8 +56,12 @@ export default function LandingPage() {
   const handleStart = () => {
     if (profile) {
       router.push('/decide');
-    } else {
+    } else if (profiles.length === 0) {
+      // 처음 방문: 온보딩으로
       router.push('/onboarding');
+    } else {
+      // 프로필은 있지만 active가 없는 경우 (이론상 드묾)
+      router.push('/profiles');
     }
   };
 
@@ -164,7 +168,7 @@ export default function LandingPage() {
                 안녕하세요, <span style={{ color: '#A78BFA' }}>{profile.name}</span>님 👋
               </p>
               <button
-                onClick={() => router.push('/onboarding?edit=true')}
+                onClick={() => router.push('/profiles')}
                 style={{
                   fontSize: 11, color: 'var(--text-primary)',
                   background: 'var(--bg-card)',
@@ -174,7 +178,7 @@ export default function LandingPage() {
                   transition: 'all 0.2s',
                 }}
               >
-                수정하기
+                사용자 변경
               </button>
             </div>
           )}

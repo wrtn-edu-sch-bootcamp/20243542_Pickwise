@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { loadHistory, clearHistory, updateHistoryEntry } from '@/lib/storage';
+import { loadHistory, clearHistory, clearHistoryForProfile, updateHistoryEntry, deleteHistoryEntry } from '@/lib/storage';
 import type { HistoryEntry } from '@/lib/types';
 import MojiCharacter from '@/components/MojiCharacter';
+import { useUser } from '@/contexts/UserContext';
 
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -57,11 +58,13 @@ function HistoryCard({
   onExpand,
   isExpanded,
   onUpdate,
+  onRequestDelete,
 }: {
   entry: HistoryEntry;
   onExpand: () => void;
   isExpanded: boolean;
   onUpdate: (id: string, updates: Partial<HistoryEntry>) => void;
+  onRequestDelete: (id: string, name: string) => void;
 }) {
   const [editingRating, setEditingRating] = useState(false);
   const [draftRating, setDraftRating] = useState(entry.rating ?? 0);
@@ -96,12 +99,30 @@ function HistoryCard({
               {timeAgo(entry.createdAt)} · 모지가 도와줬어요
             </p>
           </div>
-          <div style={{ display: 'flex', marginLeft: 12 }}>
-            {entry.items.filter((i) => i.imageBase64).slice(0, 2).map((item, idx) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={item.id} src={item.imageBase64} alt=""
-                style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', border: '2px solid var(--bg-base)', marginLeft: idx > 0 ? -10 : 0 }} />
-            ))}
+          {/* 이미지 썸네일 + X 버튼 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 12 }}>
+            <div style={{ display: 'flex' }}>
+              {entry.items.filter((i) => i.imageBase64).slice(0, 2).map((item, idx) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={item.id} src={item.imageBase64} alt=""
+                  style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', border: '2px solid var(--bg-base)', marginLeft: idx > 0 ? -10 : 0 }} />
+              ))}
+            </div>
+            {/* 삭제 X 버튼 */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onRequestDelete(entry.id, itemNames || '이 기록'); }}
+              title="이 기록 삭제"
+              style={{
+                width: 28, height: 28, borderRadius: 8, border: 'none',
+                background: 'rgba(255,255,255,0.06)',
+                color: 'var(--text-muted)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, transition: 'all 0.15s ease',
+                fontSize: 14, fontWeight: 700,
+              }}
+            >
+              ✕
+            </button>
           </div>
         </div>
 
@@ -256,14 +277,22 @@ function HistoryCard({
 
 export default function HistoryPage() {
   const router = useRouter();
+  const { activeProfileId } = useUser();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => { setEntries(loadHistory()); }, []);
+  useEffect(() => {
+    setEntries(loadHistory(activeProfileId ?? undefined));
+  }, [activeProfileId]);
 
   const handleClear = () => {
-    clearHistory();
+    if (activeProfileId) {
+      clearHistoryForProfile(activeProfileId);
+    } else {
+      clearHistory();
+    }
     setEntries([]);
     setShowClearConfirm(false);
   };
@@ -274,6 +303,18 @@ export default function HistoryPage() {
       prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
     );
   }, []);
+
+  const handleRequestDelete = useCallback((id: string, name: string) => {
+    setDeleteTarget({ id, name });
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    deleteHistoryEntry(deleteTarget.id);
+    setEntries((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+    if (expandedId === deleteTarget.id) setExpandedId(null);
+    setDeleteTarget(null);
+  }, [deleteTarget, expandedId]);
 
   const ratedCount = entries.filter((e) => e.rating).length;
   const avgRating = ratedCount > 0
@@ -287,6 +328,65 @@ export default function HistoryPage() {
     : `평균 ${avgRating}점! ${Number(avgRating) >= 4 ? '도움이 됐다니 기뻐 🎉' : '다음엔 더 잘할게! 💪'}`;
 
   return (
+    <>
+    {/* ── 개별 삭제 확인 모달 ── */}
+    <AnimatePresence>
+      {deleteTarget && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={() => setDeleteTarget(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9000,
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '0 24px',
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.88, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 8 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            onClick={(e) => e.stopPropagation()}
+            className="glass-card"
+            style={{ width: '100%', maxWidth: 360, padding: '24px 22px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+          >
+            <p style={{ fontSize: 22, textAlign: 'center', marginBottom: 12 }}>🗑️</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', marginBottom: 8 }}>
+              기록을 삭제할까요?
+            </p>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', lineHeight: 1.6, marginBottom: 20 }}>
+              <span style={{ color: '#A78BFA', fontWeight: 600 }}>{deleteTarget.name}</span> 기록이 삭제됩니다.<br />
+              삭제하면 복구할 수 없어요.
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={handleConfirmDelete}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: 10,
+                  background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
+                  color: '#f87171', fontSize: 14, fontWeight: 500, cursor: 'pointer',
+                }}
+              >
+                삭제
+              </button>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="btn-ghost"
+                style={{ flex: 1, fontSize: 14 }}
+              >
+                취소
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
     <main className="page-container">
       <div style={{ paddingTop: 'max(48px, env(safe-area-inset-top, 48px))' }}>
         {/* Header */}
@@ -372,6 +472,7 @@ export default function HistoryPage() {
                   isExpanded={expandedId === entry.id}
                   onExpand={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
                   onUpdate={handleUpdate}
+                  onRequestDelete={handleRequestDelete}
                 />
               ))}
             </AnimatePresence>
@@ -387,5 +488,6 @@ export default function HistoryPage() {
         )}
       </div>
     </main>
+    </>
   );
 }

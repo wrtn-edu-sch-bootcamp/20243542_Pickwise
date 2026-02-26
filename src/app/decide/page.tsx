@@ -192,7 +192,7 @@ function ImageSlot({
 
 export default function DecidePage() {
   const router = useRouter();
-  const { profile, isLoaded } = useUser();
+  const { profile, activeProfileId, isLoaded } = useUser();
 
   const [items, setItems] = useState<DecisionItem[]>([
     { id: newId(), name: '' },
@@ -238,8 +238,8 @@ export default function DecidePage() {
     setIsSubmitting(true);
     const filledItems = items.filter((i) => i.name.trim() || i.imageBase64);
 
-    // 별점이 있는 최근 히스토리 최대 5건을 취향 학습 맥락으로 포함
-    const historyContext: HistoryContext[] = loadHistory()
+    // 별점이 있는 최근 히스토리 최대 5건을 취향 학습 맥락으로 포함 (현재 사용자 기준)
+    const historyContext: HistoryContext[] = loadHistory(activeProfileId ?? undefined)
       .filter((h) => h.rating && h.chosenItem)
       .slice(0, 5)
       .map((h) => ({
