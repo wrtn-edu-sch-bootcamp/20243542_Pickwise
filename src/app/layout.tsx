@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist } from 'next/font/google';
+import { Geist, Jua } from 'next/font/google';
 import './globals.css';
 import { UserProvider } from '@/contexts/UserContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -10,8 +10,14 @@ const geist = Geist({
   subsets: ['latin'],
 });
 
+const jua = Jua({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-jua',
+});
+
 export const metadata: Metadata = {
-  title: '모지픽 - AI 결정 도우미',
+  title: '모지픽',
   description: '결정이 힘들 때 모지픽이 도와드립니다. 사진과 상황을 알려주면 데이터 기반으로 최선을 골라줘요!',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -42,7 +48,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className={`${geist.variable} antialiased`}>
+      <body className={`${geist.variable} ${jua.variable} antialiased`}>
         <div className="ambient-orb-1" />
         <div className="ambient-orb-2" />
         <ThemeProvider>

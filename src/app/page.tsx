@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/UserContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useEffect } from 'react';
 import MojiCharacter from '@/components/MojiCharacter';
 
@@ -46,6 +47,8 @@ const MOJI_INTRO_MESSAGES = [
 export default function LandingPage() {
   const router = useRouter();
   const { profile, profiles, isLoaded } = useUser();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   useEffect(() => {
     if (isLoaded && profile) {
@@ -92,8 +95,8 @@ export default function LandingPage() {
           </div>
           <span
             style={{
-              fontSize: 15,
-              fontWeight: 600,
+              fontSize: 20,
+              fontWeight: 700,
               letterSpacing: '-0.01em',
               color: 'var(--text-secondary)',
             }}
@@ -109,6 +112,22 @@ export default function LandingPage() {
             size="lg"
             interval={3500}
           />
+          {/* 이름표 */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+            style={{
+              textAlign: 'center',
+              marginTop: 4,
+              fontSize: 14,
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              color: isLight ? '#BE185D' : '#F9A8D4',
+            }}
+          >
+            결정장애 해결사 모지
+          </motion.p>
         </motion.div>
 
         {/* Hero */}
