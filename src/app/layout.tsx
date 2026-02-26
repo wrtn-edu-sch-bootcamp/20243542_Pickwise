@@ -11,13 +11,13 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: '모지 - 결정장애 해결사',
-  description: '결정이 힘들 때 모지가 도와드립니다. 사진과 상황을 알려주면 데이터 기반으로 최선을 골라줘요!',
+  title: '모지픽 - AI 결정 도우미',
+  description: '결정이 힘들 때 모지픽이 도와드립니다. 사진과 상황을 알려주면 데이터 기반으로 최선을 골라줘요!',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: '모지 결정장애 해결사',
+    title: '모지픽',
   },
   formatDetection: {
     telephone: false,

@@ -98,7 +98,7 @@ export default function LandingPage() {
               color: 'var(--text-secondary)',
             }}
           >
-            결정장애 해결사 모지
+            모지픽
           </span>
         </motion.div>
 
