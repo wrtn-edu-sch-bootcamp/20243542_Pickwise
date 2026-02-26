@@ -16,6 +16,16 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(diff / 86400)}일 전`;
 }
 
+function formatDateTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+}
+
 function StarRow({
   value,
   onChange,
@@ -96,7 +106,10 @@ function HistoryCard({
               {itemNames || '결정 기록'}
             </p>
             <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {timeAgo(entry.createdAt)} · 모지가 도와줬어요
+              {timeAgo(entry.createdAt)}
+            </p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.7, marginTop: 1 }}>
+              {formatDateTime(entry.createdAt)}
             </p>
           </div>
           {/* 이미지 썸네일 + X 버튼 */}
@@ -401,7 +414,7 @@ export default function HistoryPage() {
             <div>
               <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>결정 기록</h1>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                최근 15일 · {entries.length}건
+                전체 기록 · {entries.length}건
                 {avgRating && ` · 평균 ${avgRating}점`}
               </p>
             </div>
@@ -449,7 +462,7 @@ export default function HistoryPage() {
             style={{ textAlign: 'center', paddingTop: 40 }}>
             <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 28 }}>
               모지와 함께한 결정 기록이 여기에 쌓여요.<br />
-              분석을 받으면 15일간 다시 볼 수 있어요.
+              분석을 받으면 직접 삭제 전까지 기록이 남아있어요.
             </p>
             <button className="btn-primary" onClick={() => router.push('/decide')} style={{ maxWidth: 240, margin: '0 auto' }}>
               첫 고민 물어보기

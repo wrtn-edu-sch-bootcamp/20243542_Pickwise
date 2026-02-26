@@ -8,8 +8,6 @@ const KEYS = {
   PENDING: 'decide_pending',
 } as const;
 
-const HISTORY_DAYS = 15;
-
 // ── 레거시 단일 프로필 → 다중 프로필로 마이그레이션 ──
 function migrateIfNeeded(): void {
   if (localStorage.getItem(KEYS.PROFILES)) return; // 이미 마이그레이션됨
@@ -135,25 +133,19 @@ export function clearPendingDecision(): void {
 
 export function saveToHistory(entry: HistoryEntry): void {
   const history = loadAllHistory();
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - HISTORY_DAYS);
-  const filtered = history.filter((h) => new Date(h.createdAt) > cutoff);
-  filtered.unshift(entry);
-  localStorage.setItem(KEYS.HISTORY, JSON.stringify(filtered));
+  history.unshift(entry);
+  localStorage.setItem(KEYS.HISTORY, JSON.stringify(history));
 }
 
-/** 활성 프로필에 해당하는 기록만 반환 */
+/** 활성 프로필에 해당하는 기록만 반환 (무기한 보존, 수동 삭제 전까지 유지) */
 export function loadHistory(profileId?: string): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(KEYS.HISTORY);
     if (!raw) return [];
     const all = JSON.parse(raw) as HistoryEntry[];
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - HISTORY_DAYS);
-    const recent = all.filter((h) => new Date(h.createdAt) > cutoff);
-    if (!profileId) return recent;
+    if (!profileId) return all;
     // profileId가 있으면 해당 프로필 것만, profileId 없는 레거시 항목은 legacy 프로필에 귀속
-    return recent.filter((h) =>
+    return all.filter((h) =>
       h.profileId === profileId ||
       (!h.profileId && profileId === 'profile-legacy')
     );
