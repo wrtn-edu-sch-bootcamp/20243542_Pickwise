@@ -174,7 +174,7 @@ function ImageSlot({
         <input
           className="input-field"
           type="text"
-          placeholder={['예시: 나이키 에어맥스', '예시시: 아디다스 삼바', '예: 뉴발란스 990'][index] ?? `예시시: 선택지 ${index + 1} 이름`}
+          placeholder={['예시: 나이키 에어맥스', '예시: 아디다스 삼바', '예: 뉴발란스 990'][index] ?? `예시: 선택지 ${index + 1} 이름`}
           value={item.name}
           onChange={(e) => onNameChange(item.id, e.target.value)}
           style={{ fontSize: 14, paddingRight: item.name.trim() ? 36 : 16 }}
@@ -361,7 +361,7 @@ export default function DecidePage() {
               color: hasAtLeastTwoNames ? '#7C3AED' : '#EC4899',
               fontWeight: 600,
             }}>
-              {hasAtLeastTwoNames ? `✓ ${filledNames.length}개 입력됨` : '* 이름 최소 2개 필수'}
+              {hasAtLeastTwoNames ? `✓ ${filledNames.length}개 입력됨` : '* 선택지 입력 최소 2개 필수'}
             </span>
           </div>
 
