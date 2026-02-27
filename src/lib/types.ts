@@ -36,7 +36,7 @@ export interface HistoryEntry {
 export interface HistoryContext {
   situation: string;
   chosenItem: string;
-  rating: number;
+  rating?: number;      // 별점 (없을 수도 있음)
   ratingNote?: string;
 }
 
@@ -44,5 +44,6 @@ export interface DecisionRequest {
   items: DecisionItem[];
   situation: string;
   userProfile: UserProfile;
+  currentDateTime?: string;          // 분석 시점의 날짜/시간
   historyContext?: HistoryContext[]; // 과거 결정 맥락 (취향 학습용)
 }

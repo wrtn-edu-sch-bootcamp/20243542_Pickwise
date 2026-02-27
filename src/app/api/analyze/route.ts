@@ -69,6 +69,12 @@ const SYSTEM_PROMPT = `당신은 '모지'라는 AI 결정 전문가입니다. �
 - 잔소리하듯 따뜻하고 친근한 어조로 과거 경험을 언급하되, 부담스럽지 않게 자연스럽게 녹여내세요.
 - 과거 기록이 없으면 이 부분은 생략하세요.
 
+━━━ 날짜/시간 활용 규칙 ━━━
+- [현재 날짜/시간]이 제공된 경우, 이를 분석에 자연스럽게 반영하세요.
+- 예: 아침 7시 → 아침 식사 맥락 고려 / 밤 11시 → 야식 맥락 고려
+- 예: 주말 → 여가·외출 맥락 / 평일 점심 → 빠른 식사 맥락
+- 분석 내용에 시간대가 관련 있을 경우 언급하세요.
+
 ━━━ 공통 규칙 ━━━
 - 반드시 제공된 선택지 이름 중 하나를 정확히 선택하세요 (임의로 이름 변경 금지)
 - 입력이 의미 없는 글자(예: ㄴ, ㅁ, asdf 등)이거나 비교 대상이 전혀 불명확한 경우 분석불가 형식을 사용하세요
@@ -82,8 +88,11 @@ const SYSTEM_PROMPT = `당신은 '모지'라는 AI 결정 전문가입니다. �
 function buildHistoryContextText(history: HistoryContext[]): string {
   const STAR = ['', '⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '⭐⭐⭐⭐⭐'];
   const lines = history.map((h, i) => {
+    const ratingStr = h.rating
+      ? ` → 만족도: ${STAR[h.rating]} (${h.rating}점)`
+      : ' → 만족도: 미평가';
     const note = h.ratingNote ? ` — 후기: "${h.ratingNote}"` : '';
-    return `  ${i + 1}. 상황: "${h.situation.slice(0, 80)}" → 모지 추천: "${h.chosenItem}" → 만족도: ${STAR[h.rating]} (${h.rating}점)${note}`;
+    return `  ${i + 1}. 상황: "${h.situation.slice(0, 80)}" → 모지 추천: "${h.chosenItem}"${ratingStr}${note}`;
   });
   return `\n\n[사용자 과거 결정 기록 — 취향 학습 데이터]\n이 기록을 바탕으로 사용자의 취향과 패턴을 파악하고, 분석에 자연스럽게 반영하세요.\n${lines.join('\n')}`;
 }
@@ -106,7 +115,7 @@ function buildItemParts(item: DecisionItem, index: number): Part[] {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as DecisionRequest;
-    const { items, situation, userProfile, historyContext } = body;
+    const { items, situation, userProfile, currentDateTime, historyContext } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: '선택지가 없습니다' }, { status: 400 });
@@ -133,7 +142,7 @@ export async function POST(req: Request) {
 
     const parts: Part[] = [
       {
-        text: `[사용자 프로필]\n이름: ${userProfile.name}\n성별: ${genderLabel}\n나이: ${userProfile.age}세\nMBTI: ${userProfile.mbti ?? '모름'}\n\n[비교할 선택지 수]: ${items.length}개\n`,
+        text: `[현재 날짜/시간]\n${currentDateTime ?? new Date().toLocaleString('ko-KR')}\n이 시간대를 반드시 분석에 반영하세요. (예: 아침이면 아침 상황, 밤이면 밤 상황 고려)\n\n[사용자 프로필]\n이름: ${userProfile.name}\n성별: ${genderLabel}\n나이: ${userProfile.age}세\nMBTI: ${userProfile.mbti ?? '모름'}\n\n[비교할 선택지 수]: ${items.length}개\n`,
       },
     ];
 

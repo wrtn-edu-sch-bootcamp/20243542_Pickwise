@@ -223,12 +223,13 @@ export default function DecidePage() {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, imageBase64 } : item)));
   };
 
-  const hasAtLeastOneName = items.some((i) => i.name.trim());
+  const filledNames = items.filter((i) => i.name.trim());
+  const hasAtLeastTwoNames = filledNames.length >= 2;
   const hasSituation = situation.trim().length > 0;
-  const isValid = hasAtLeastOneName && hasSituation;
+  const isValid = hasAtLeastTwoNames && hasSituation;
 
   const validationErrors = [];
-  if (touched && !hasAtLeastOneName) validationErrors.push('선택지 이름을 최소 1개 입력해주세요');
+  if (touched && !hasAtLeastTwoNames) validationErrors.push('선택지 이름을 최소 2개 입력해주세요');
   if (touched && !hasSituation) validationErrors.push('세부 상황을 입력해주세요');
 
   const handleSubmit = async () => {
@@ -238,14 +239,21 @@ export default function DecidePage() {
     setIsSubmitting(true);
     const filledItems = items.filter((i) => i.name.trim() || i.imageBase64);
 
-    // 별점이 있는 최근 히스토리 최대 5건을 취향 학습 맥락으로 포함 (현재 사용자 기준)
+    // 현재 날짜/시간 (분석에 활용)
+    const now = new Date();
+    const currentDateTime = now.toLocaleString('ko-KR', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      weekday: 'long', hour: '2-digit', minute: '2-digit',
+    });
+
+    // 최근 히스토리 최대 8건 (별점 유무 관계없이, 선택지가 있는 것만)
     const historyContext: HistoryContext[] = loadHistory(activeProfileId ?? undefined)
-      .filter((h) => h.rating && h.chosenItem)
-      .slice(0, 5)
+      .filter((h) => h.chosenItem)
+      .slice(0, 8)
       .map((h) => ({
         situation: h.situation,
         chosenItem: h.chosenItem!,
-        rating: h.rating!,
+        rating: h.rating,
         ratingNote: h.ratingNote,
       }));
 
@@ -253,6 +261,7 @@ export default function DecidePage() {
       items: filledItems,
       situation,
       userProfile: profile,
+      currentDateTime,
       historyContext: historyContext.length > 0 ? historyContext : undefined,
     });
     router.push('/result');
@@ -349,10 +358,10 @@ export default function DecidePage() {
             </p>
             <span style={{
               fontSize: 11,
-              color: hasAtLeastOneName ? '#7C3AED' : '#EC4899',
+              color: hasAtLeastTwoNames ? '#7C3AED' : '#EC4899',
               fontWeight: 600,
             }}>
-              {hasAtLeastOneName ? '✓ 이름 입력됨' : '* 이름 최소 1개 필수'}
+              {hasAtLeastTwoNames ? `✓ ${filledNames.length}개 입력됨` : '* 이름 최소 2개 필수'}
             </span>
           </div>
 
