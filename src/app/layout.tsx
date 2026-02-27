@@ -49,6 +49,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className={`${geist.variable} ${jua.variable} antialiased`}>
+        <script dangerouslySetInnerHTML={{
+          __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js');})}`,
+        }} />
         <div className="ambient-orb-1" />
         <div className="ambient-orb-2" />
         <ThemeProvider>
