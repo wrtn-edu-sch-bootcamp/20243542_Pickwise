@@ -165,7 +165,7 @@ function ImageSlot({
             </p>
           </div>
         )}
-        <input ref={inputRef} type="file" accept="image/*" capture="environment"
+        <input ref={inputRef} type="file" accept="image/*"
           onChange={handleChange} style={{ display: 'none' }} />
       </div>
 
